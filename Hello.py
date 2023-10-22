@@ -1,51 +1,47 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022)
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import streamlit as st
-from streamlit.logger import get_logger
+import openai
 
-LOGGER = get_logger(__name__)
+# Set your OpenAI API key here
+openai.api_key = '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'
 
-
-def run():
-    st.set_page_config(
-        page_title="Hello",
-        page_icon="👋",
+def generate_summary_and_questions(notes, generate_questions=True):
+    prompt = f"Summarize the following notes: {notes}"
+    if not generate_questions:
+        prompt = f"CAN YOU GIVE ME A SUMMARY OF THESE NOTES {notes} THAT IS 33% THE LENGTH OF THE ORIGINAL NOTES"
+    else:
+        prompt = f"CAN YOU GIVE ME A SUMMARY OF THESE NOTES {notes} THAT IS 33% THE LENGTH OF THE ORIGINAL NOTES, AND CREATE 3-5 STUDY QUESTIONS"
+    
+    #response = openai.Completion.create(
+        #engine="text-davinci-003",
+        #prompt=prompt,
+        #max_tokens=250,  # Adjust the max_tokens based on your requirements
+        #n=1,
+    #)
+    response = openai.ChatCompletion.create(
+    model="gpt-3.5-turbo",
+    messages=[
+        {"role": "system", "content": "YOU ARE A NOTE SUMMARIZING ASSISTANT"},
+        {"role": "user", "content": prompt}
+    ]
     )
 
-    st.write("# Welcome to Streamlit! 👋")
+    generated_text = response['choices'][0]['message']['content'] #response.choices[0].text.strip()
+    return generated_text
 
-    st.sidebar.success("Select a demo above.")
+# Streamlit app
+st.title("Educational Notes Summarizer and Study Question Generator")
 
-    st.markdown(
-        """
-        Streamlit is an open-source app framework built specifically for
-        Machine Learning and Data Science projects.
-        **👈 Select a demo from the sidebar** to see some examples
-        of what Streamlit can do!
-        ### Want to learn more?
-        - Check out [streamlit.io](https://streamlit.io)
-        - Jump into our [documentation](https://docs.streamlit.io)
-        - Ask a question in our [community
-          forums](https://discuss.streamlit.io)
-        ### See more complex demos
-        - Use a neural net to [analyze the Udacity Self-driving Car Image
-          Dataset](https://github.com/streamlit/demo-self-driving)
-        - Explore a [New York City rideshare dataset](https://github.com/streamlit/demo-uber-nyc-pickups)
-    """
-    )
+# Text input for user's notes
+user_notes = st.text_area("Enter your educational notes:")
 
+# Checkbox to choose between summary and study questions
+generate_summary = st.checkbox("Generate Summary (check to generate 5 study questions)")
 
-if __name__ == "__main__":
-    run()
+# Generate summary or study questions when the user submits the notes
+if st.button("Generate"):
+    if user_notes:
+        generated_text = generate_summary_and_questions(user_notes, generate_summary)
+        st.subheader("Output:")
+        st.write(generated_text)
+    else:
+        st.warning("Please enter your notes before generating the output.")
